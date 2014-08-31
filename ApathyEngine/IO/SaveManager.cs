@@ -14,11 +14,11 @@ using ApathyEngine.Utilities;
 namespace ApathyEngine.IO
 {
     /// <summary>
-    /// Creates a new IOManager for save management.
+    /// Creates a new SaveManager for save management.
     /// </summary>
     /// <typeparam name="T">The type of data to save. This is required to have a parameterless constructor
     /// that returns a default set of save data.</typeparam>
-    public class IOManager<T>
+    public class SaveManager<T>
         where T : new()
     {
         /// <summary>
@@ -50,6 +50,11 @@ namespace ApathyEngine.IO
         /// Gets the current save number; which is 1-based and not 0-based.
         /// </summary>
         public int CurrentSaveNumber { get { return currentSave + 1; } }
+
+        /// <summary>
+        /// Gets the number of saves the save file supports.
+        /// </summary>
+        public int SaveCount { get { return file.Saves.Length; } }
 
         /// <summary>
         /// Gets the currently loaded save.
@@ -101,7 +106,7 @@ namespace ApathyEngine.IO
         /// </summary>
         /// <param name="defaultSaveData">An instance of the default save data for the save file.</param>
         /// <param name="filename">Filename to save data to. Will use filename - .ext + .bak for backups.</param>
-        public IOManager(SaveFile<T> defaultSaveData, string filename)
+        public SaveManager(SaveFile<T> defaultSaveData, string filename)
         {
 #if XBOX360
             initializing = true;
@@ -147,7 +152,7 @@ namespace ApathyEngine.IO
 #endif
         }
 
-        ~IOManager()
+        ~SaveManager()
         {
             if(currentStream != null)
                 currentStream.Close();

@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Net;
 using Microsoft.Xna.Framework.Storage;
 using System.Xml.Serialization;
 using ApathyEngine.Input;
+using ApathyEngine.Utilities;
 
 namespace ApathyEngine.IO
 {

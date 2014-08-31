@@ -40,7 +40,7 @@ namespace ApathyEngine
         #endregion
 
         #region I/O
-        public IOManager<T> Manager { get; private set; }
+        public SaveManager<T> Manager { get; private set; }
         #endregion
 
         #region Loading
