@@ -31,7 +31,13 @@ namespace ApathyEngine.Menus
         protected Rectangle topR;
         protected Rectangle bottomR;
 
-        public CreditsMenu(params Sprite[] credits)
+        /// <summary>
+        /// Creates a menu that can be used to display a series of textures as scrolling credits.
+        /// </summary>
+        /// <param name="game">Owning game.</param>
+        /// <param name="credits">List of textures to use as credits.</param>
+        public CreditsMenu(BaseGame game, params Sprite[] credits)
+            :base(game)
         {
             this.credits = credits;
             onGDMReset(this, EventArgs.Empty);
@@ -84,7 +90,7 @@ namespace ApathyEngine.Menus
                         if(screenAlpha - deltaA < 0) // black background
                         {
                             reset();
-                            GameManager.State = GameState.MainMenu;
+                            this.game.ChangeState(GameState.MainMenu);
                             MediaSystem.PlayTrack(SongOptions.Menu);
                         }
                         else

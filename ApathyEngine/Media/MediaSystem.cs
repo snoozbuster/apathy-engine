@@ -279,17 +279,17 @@ namespace ApathyEngine.Media
                 ToggleMute();
             }
 #endif
-            if(GameManager.State == GameState.Paused && stateLastFrame == GameState.Running)
+            if(game.State == GameState.Paused && stateLastFrame == GameState.Running)
             {
                 PauseAll();
                 
                 ResumeBGM();
             }
-            else if(GameManager.State == GameState.Running && stateLastFrame == GameState.Paused)
+            else if(game.State == GameState.Running && stateLastFrame == GameState.Paused)
             {
                 PlayAll();
             }
-            stateLastFrame = GameManager.State;
+            stateLastFrame = game.State;
 
             //engine.Update();
         }
@@ -497,8 +497,8 @@ namespace ApathyEngine.Media
 
             playingVoiceActing.Play();
             playingVoiceActing.Volume = maxVoiceVolume;
-            if(!GameManager.Game.IsActive || GameManager.State == GameState.Paused || GameManager.State == GameState.Paused_SelectingMedia ||
-                GameManager.State == GameState.Paused_PadQuery || GameManager.State == GameState.Paused_DC)
+            if(!GameManager.Game.IsActive || game.State == GameState.Paused || game.State == GameState.MediaPlayerMenu ||
+                game.State == GameState.PadQueryMenu || game.State == GameState.PausedGamepadDC)
                 playingVoiceActing.Pause();
 
             shouldQuietMusic = trackNo != 12;
@@ -874,7 +874,7 @@ namespace ApathyEngine.Media
         /// </summary>
         public static void PauseAuxilary()
         {
-            if(GameManager.State != GameState.MainMenu)
+            if(game.State != GameState.MainMenu)
             {
                 foreach(SoundEffectInstance c in playingSFX)
                     if(!c.IsDisposed && c.State == SoundState.Playing)
@@ -919,12 +919,12 @@ namespace ApathyEngine.Media
             if(crossfadingFrom != null && !crossfadingFrom.IsDisposed && crossfadingFrom.State == SoundState.Playing)
                 crossfadingFrom.Pause();
 
-            if(GameManager.State != GameState.MainMenu)
+            if(game.State != GameState.MainMenu)
             {
                 int i = 0;
                 foreach(SoundEffectInstance c in playingSFX)
                 {
-                    if(!c.IsDisposed && c.State == SoundState.Playing && ((i != playingSFX.Count - 1 && GameManager.State == GameState.Paused) || GameManager.State != GameState.Paused))
+                    if(!c.IsDisposed && c.State == SoundState.Playing && ((i != playingSFX.Count - 1 && game.State == GameState.Paused) || game.State != GameState.Paused))
                         c.Pause();
                     i++;
                 }

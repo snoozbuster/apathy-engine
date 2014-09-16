@@ -23,21 +23,21 @@ namespace ApathyEngine
         /// </summary>
         MainMenu,
         /// <summary>
-        /// Indicates the game is within a level and paused.
+        /// Indicates the game is running, but paused.
         /// </summary>
         Paused,
         /// <summary>
         /// Indicates the game is showing the gamepad disconnected screen.
         /// </summary>
-        Paused_DC,
+        PausedGamepadDC,
         /// <summary>
         /// Indicates the game is showing the options menu.
         /// </summary>
-        Menuing_Opt,
+        OptionsMenu,
         /// <summary>
         /// Indicates the game is showing the level select menu.
         /// </summary>
-        Menuing_Lev,
+        LevelSelectMenu,
         /// <summary>
         /// Indicates the game is showing the exit confirmation menu.
         /// </summary>
@@ -53,18 +53,22 @@ namespace ApathyEngine
         /// <summary>
         /// Indicates the game is showing the Objectives menu.
         /// </summary>
-        Menuing_Obj,
+        AchievementsMenu,
         /// <summary>
         /// Indicates the game is showing the High Scores menu.
         /// </summary>
-        Menuing_HiS,
+        HighScoreMenu,
         /// <summary>
         /// Indicates the game is asking if the user would like to continue with a gamepad.
         /// </summary>
-        Paused_PadQuery,
+        PadQueryMenu,
         /// <summary>
         /// Indicates the Media Player is open.
         /// </summary>
-        Paused_SelectingMedia
+        MediaPlayerMenu,
+        /// <summary>
+        /// Indicates the instructions menu is open.
+        /// </summary>
+        InstructionsMenu,
     }
 }

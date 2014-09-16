@@ -134,7 +134,7 @@ namespace ApathyEngine.Graphics
 
         private void HandleInput(GameTime gameTime)
         {
-            if(GameManager.State == GameState.Results)
+            if(game.State == GameState.Results)
                 return;
 
 #if DEBUG

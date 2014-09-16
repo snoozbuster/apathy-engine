@@ -107,24 +107,24 @@ namespace ApathyEngine.Input
                     xboxPluggedInWhenKeyboard = false;
 #if XBOX360
                 if(!CurrentPad.IsConnected)
-                    GameManager.State = GameState.Paused_DC;
+                    game.ChangeState(GameState.Paused_DC);
 #else
-                if(!CurrentPad.IsConnected && WasConnected && GameManager.State != GameState.Exiting &&
-                    !isSelectingSave && GameManager.State != GameState.Paused_DC)
+                if(!CurrentPad.IsConnected && WasConnected && game.State != GameState.Exiting &&
+                    !isSelectingSave && game.State != GameState.PausedGamepadDC)
                 {
-                    if(GameManager.State == GameState.Paused_SelectingMedia || GameManager.State == GameState.Exiting)
-                        GameManager.State = GameManager.PreviousState;
-                    GameManager.State = GameState.Paused_DC;
+                    if(game.State == GameState.MediaPlayerMenu || game.State == GameState.Exiting)
+                        game.ChangeState(game.PreviousState);
+                    game.ChangeState(GameState.PausedGamepadDC);
                     ControlScheme = ControlScheme.None;
                     MediaSystem.PauseAuxilary();
                 }
                 else if(!xboxPluggedInWhenKeyboard && !WasConnected && CurrentPad.IsConnected &&
-                    GameManager.State != GameState.Exiting && !isSelectingSave &&
-                    GameManager.State != GameState.Paused_PadQuery)
+                    game.State != GameState.Exiting && !isSelectingSave &&
+                    game.State != GameState.PadQueryMenu)
                 {
-                    if(GameManager.State == GameState.Paused_SelectingMedia || GameManager.State == GameState.Exiting)
-                        GameManager.State = GameManager.PreviousState;
-                    GameManager.State = GameState.Paused_PadQuery;
+                    if(game.State == GameState.MediaPlayerMenu || game.State == GameState.Exiting)
+                        game.ChangeState(game.PreviousState);
+                    game.ChangeState(GameState.PadQueryMenu);
                     ControlScheme = ControlScheme.None;
                     MediaSystem.PauseAuxilary();
                 }

@@ -19,23 +19,37 @@ namespace ApathyEngine.Menus
     /// <remarks>This implementation only includes buttons for start, instructions, and quit.</remarks>
     public class MainMenu : Menu
     {
-        private float timerInMilliseconds = 0;
+        protected float timerInMilliseconds = 0;
 
-        private bool startBeenPressed;
-        private int timer = 1200;
-        private const int smallerTime = 300;
-        private const int largerTime = 750;
+        protected bool startBeenPressed;
+        protected int timer = 1200;
+        protected const int smallerTime = 300;
+        protected const int largerTime = 750;
 
-        private readonly MenuControl start, instructions;
+        protected readonly MenuControl start, instructions;
 
-        private bool can_click = false;
+        protected bool can_click = false;
 
-        public MainMenu()
+        protected bool usePressStart;
+
+        /// <summary>
+        /// Creates a new main menu.
+        /// </summary>
+        /// <param name="game">Program's BaseGame instance.</param>
+        /// <param name="startButton">Sprite to use for the start button.</param>
+        /// <param name="instructionsButton">Sprite to use for the instructions button.</param>
+        /// <param name="quitButton">Sprite to use for the quit button.</param>
+        /// <param name="usePressStart">Indicates if the menu should display the "press start" image or not; 
+        /// if false the game will not be able to accept gamepad input.</param>
+        public MainMenu(BaseGame game, Sprite startButton, Sprite instructionsButton, Sprite quitButton, bool usePressStart = true)
+            : base(game)
         {
+            this.usePressStart = usePressStart;
+
             MenuButton quit;
-            start = new MenuButton(loader.startButton, delegate { GameManager.State = GameState.Running; timerInMilliseconds = 0; Program.Game.Start(); });
-            instructions = new MenuButton(loader.instructionsButton, delegate { GameManager.State = GameState.Menuing_HiS; can_click = false; });
-            quit = new MenuButton(loader.quitButton, delegate { GameManager.State = GameState.Exiting; });
+            start = new MenuButton(startButton, delegate { game.ChangeState(GameState.Running); timerInMilliseconds = 0; game.Start(); });
+            instructions = new MenuButton(instructionsButton, delegate { game.ChangeState(GameState.InstructionsMenu); can_click = false; });
+            quit = new MenuButton(quitButton, () => game.ChangeState(GameState.Exiting));
 
             start.SetDirectionals(null, instructions, null, null);
             instructions.SetDirectionals(start, quit, null, null);
@@ -49,7 +63,7 @@ namespace ApathyEngine.Menus
         public override void Draw(GameTime gameTime)
         {
             RenderingDevice.GraphicsDevice.Clear(Color.White);
-            if(InputManager.MessagePad == null || (startBeenPressed && timer > 0))
+            if((InputManager.MessagePad == null || (startBeenPressed && timer > 0)) && usePressStart)
             {
                 int time = startBeenPressed ? smallerTime : largerTime;
 
@@ -82,19 +96,24 @@ namespace ApathyEngine.Menus
             if(startBeenPressed)
                 timer -= gameTime.ElapsedGameTime.Milliseconds;
 
-            if(!Program.Game.Loading)
+            if(!game.Loading)
             {
                 if(InputManager.MessagePad == null)
                 {
-                    InputManager.PlayerSelect(Program.Game.IsActive);
-                    if(InputManager.MessagePad != null)
+                    if(usePressStart)
                     {
-                        MediaSystem.PlaySoundEffect(SFXOptions.Box_Success);
-                        MenuHandler.MouseTempDisabled = true;
-                        startBeenPressed = true;
-                        timer = 1200;
-                        timerInMilliseconds %= smallerTime;
+                        InputManager.PlayerSelect(game);
+                        if(InputManager.MessagePad != null)
+                        {
+                            MediaSystem.PlaySoundEffect(SFXOptions.Box_Success);
+                            MenuHandler.MouseTempDisabled = true;
+                            startBeenPressed = true;
+                            timer = 1200;
+                            timerInMilliseconds %= smallerTime;
+                        }
                     }
+                    else
+                        InputManager.SetInputDevice(new HumanKeyboard(), new HumanMouse(game));
                 }
                 else if(InputManager.MessagePad != null && timer <= 0)
                 {
@@ -114,7 +133,7 @@ namespace ApathyEngine.Menus
 
         private void ReturnToPressStart()
         {
-            InputManager.RemoveInputDevices();
+            InputManager.RemoveInputDevices(game);
             startBeenPressed = false;
             ResetTimer();
             MediaSystem.PlaySoundEffect(SFXOptions.Box_Death);

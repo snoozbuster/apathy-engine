@@ -16,7 +16,12 @@ namespace ApathyEngine.Menus
     /// </summary>
     public class GamepadDCMenu : Menu
     {
-        public GamepadDCMenu()
+        /// <summary>
+        /// Creates a menu that will appear when the gamepad is disconnected.
+        /// </summary>
+        /// <param name="game">Owning game.</param>
+        public GamepadDCMenu(BaseGame game)
+            :base(game)
         { }
 
         public override void Draw(GameTime gameTime)
@@ -25,8 +30,8 @@ namespace ApathyEngine.Menus
                 SimpleMessageBox.ShowMessageBox("Game Pad Disconnected!", "The primary game pad has become disconnected. Please reconnect it to continue.",
                     new string[] { "Okay" }, 0, MessageBoxIcon.Error);
 #else
-            if(GameManager.PreviousState == GameState.Running)
-                GameManager.DrawLevel(gameTime);
+            if(game.PreviousState == GameState.Running)
+                game.DrawRunning(gameTime);
 
             RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.LinearClamp, null, null);
 
@@ -41,7 +46,7 @@ namespace ApathyEngine.Menus
         {
             if(InputManager.CurrentPad.IsConnected)
             {
-                GameManager.State = GameManager.PreviousState;
+                game.ChangeState(game.PreviousState);
                 MediaSystem.PlayAll();
             }
 #if WINDOWS

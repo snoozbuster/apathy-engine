@@ -62,7 +62,14 @@ namespace ApathyEngine.Menus
         private Vector2 sliderPos;
         private const float epsilon = 0.001f;
 
-        public MediaPlayerMenu()
+        private AbstractMouse mouseLastFrame;
+
+        /// <summary>
+        /// Creates a menu that provides media playback controls.
+        /// </summary>
+        /// <param name="game">Owning game.</param>
+        public MediaPlayerMenu(BaseGame game)
+            :base(game)
         {
             font = loader.SmallerFont;
             MenuButton artists, shuffle, albums;
@@ -77,15 +84,15 @@ namespace ApathyEngine.Menus
                 col[i] = Color.Black;
             black.SetData(col);
 
-            background = new Sprite(delegate { return loader.MediaTexture; }, new Vector2(RenderingDevice.Width, RenderingDevice.Height) * 0.5f, new Rectangle(213, 0, 447, 235), Sprite.RenderPoint.Center);
-            scissorBackground = new Sprite(delegate { return black; }, new Vector2(background.UpperLeft.X + 17 * RenderingDevice.TextureScaleFactor.X, background.LowerRight.Y - 55 * RenderingDevice.TextureScaleFactor.Y), null, Sprite.RenderPoint.UpLeft);
-            albumsTex = new Sprite(delegate { return loader.MediaTexture; }, background.UpperLeft + new Vector2(205, 24) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 0, 210, 51), Sprite.RenderPoint.UpLeft);
-            artistsTex = new Sprite(delegate { return loader.MediaTexture; }, new Vector2(albumsTex.UpperLeft.X, albumsTex.LowerRight.Y) + new Vector2(0, 11) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 51, 210, 51), Sprite.RenderPoint.UpLeft);
-            shuffleTex = new Sprite(delegate { return loader.MediaTexture; }, new Vector2(artistsTex.UpperLeft.X, artistsTex.LowerRight.Y) + new Vector2(0, 11) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 102, 210, 51), Sprite.RenderPoint.UpLeft);
-            playTex = new Sprite(delegate { return loader.MediaTexture; }, background.UpperLeft + new Vector2(45, 36) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 154, 112, 112), Sprite.RenderPoint.UpLeft);
-            stopTex = new Sprite(delegate { return loader.MediaTexture; }, background.UpperLeft + new Vector2(45, 36) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 266, 112, 112), Sprite.RenderPoint.UpLeft);
-            prevTex = new Sprite(delegate { return loader.MediaTexture; }, background.UpperLeft + new Vector2(17, 10) * RenderingDevice.TextureScaleFactor, new Rectangle(112, 154, 76, 162), Sprite.RenderPoint.UpLeft);
-            nextTex = new Sprite(delegate { return loader.MediaTexture; }, new Vector2(prevTex.LowerRight.X, prevTex.UpperLeft.Y) + new Vector2(12, 0) * RenderingDevice.TextureScaleFactor, new Rectangle(112, 317, 76, 162), Sprite.RenderPoint.UpLeft);
+            background = new Sprite(() => loader.MediaTexture, new Vector2(RenderingDevice.Width, RenderingDevice.Height) * 0.5f, new Rectangle(213, 0, 447, 235), Sprite.RenderPoint.Center);
+            scissorBackground = new Sprite(() => black, new Vector2(background.UpperLeft.X + 17 * RenderingDevice.TextureScaleFactor.X, background.LowerRight.Y - 55 * RenderingDevice.TextureScaleFactor.Y), null, Sprite.RenderPoint.UpLeft);
+            albumsTex = new Sprite(() => loader.MediaTexture, background.UpperLeft + new Vector2(205, 24) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 0, 210, 51), Sprite.RenderPoint.UpLeft);
+            artistsTex = new Sprite(() => loader.MediaTexture, new Vector2(albumsTex.UpperLeft.X, albumsTex.LowerRight.Y) + new Vector2(0, 11) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 51, 210, 51), Sprite.RenderPoint.UpLeft);
+            shuffleTex = new Sprite(() => loader.MediaTexture, new Vector2(artistsTex.UpperLeft.X, artistsTex.LowerRight.Y) + new Vector2(0, 11) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 102, 210, 51), Sprite.RenderPoint.UpLeft);
+            playTex = new Sprite(() => loader.MediaTexture, background.UpperLeft + new Vector2(45, 36) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 154, 112, 112), Sprite.RenderPoint.UpLeft);
+            stopTex = new Sprite(() => loader.MediaTexture, background.UpperLeft + new Vector2(45, 36) * RenderingDevice.TextureScaleFactor, new Rectangle(0, 266, 112, 112), Sprite.RenderPoint.UpLeft);
+            prevTex = new Sprite(() => loader.MediaTexture, background.UpperLeft + new Vector2(17, 10) * RenderingDevice.TextureScaleFactor, new Rectangle(112, 154, 76, 162), Sprite.RenderPoint.UpLeft);
+            nextTex = new Sprite(() => loader.MediaTexture, new Vector2(prevTex.LowerRight.X, prevTex.UpperLeft.Y) + new Vector2(12, 0) * RenderingDevice.TextureScaleFactor, new Rectangle(112, 317, 76, 162), Sprite.RenderPoint.UpLeft);
 
             play = new MenuButton(playTex, delegate { swapPlayPause(); string s = MediaSystem.StartShuffleCustomMusic(); if(s != string.Empty) ErrorString = s; });
             stop = new MenuButton(stopTex, delegate { swapPlayPause(); MediaSystem.StopCustomMusic(); });
@@ -167,8 +174,8 @@ namespace ApathyEngine.Menus
 
         public override void Draw(GameTime gameTime)
         {
-            if(GameManager.PreviousState == GameState.Running)
-                GameManager.DrawLevel(gameTime);
+            if(game.PreviousState == GameState.Running)
+                game.DrawRunning(gameTime);
 
             RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.LinearClamp, null, null);
             RenderingDevice.SpriteBatch.Draw(loader.EmptyTex, new Rectangle(0, 0, (int)RenderingDevice.Width, (int)RenderingDevice.Height), fill);
@@ -269,7 +276,7 @@ namespace ApathyEngine.Menus
                     ErrorString = string.Empty;
                 }
 
-                if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MusicKey) || InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.MusicKey))
+                if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MusicKey) || InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.MusicKey))
                     startFadeBack();
 
                 #region Fading
@@ -289,7 +296,7 @@ namespace ApathyEngine.Menus
                     {
                         fade = FadeDirection.In;
                         MediaSystem.PlayAll();
-                        GameManager.State = GameManager.PreviousState;
+                        game.ChangeState(game.PreviousState);
                     }
                     else
                         return;
@@ -308,8 +315,8 @@ namespace ApathyEngine.Menus
                 else
                 {
                     #region keyboard input
-                    if(InputManager.CurrentPad.WasButtonJustReleased(Program.Game.Manager.CurrentSaveXboxOptions.SelectionKey) ||
-                        InputManager.KeyboardState.WasKeyJustReleased(Program.Game.Manager.CurrentSaveWindowsOptions.SelectionKey))
+                    if(InputManager.CurrentPad.WasButtonJustReleased(game.Manager.CurrentSaveXboxOptions.SelectionKey) ||
+                        InputManager.KeyboardState.WasKeyJustReleased(game.Manager.CurrentSaveWindowsOptions.SelectionKey))
                     {
                         if(names[selectedIndex] != "(Empty)")
                         {
@@ -328,8 +335,8 @@ namespace ApathyEngine.Menus
                     }
                     if(!holdingEnter || sliding)
                     {
-                        if(InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.SelectionKey) ||
-                            InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.SelectionKey))
+                        if(InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.SelectionKey) ||
+                            InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.SelectionKey))
                         {
                             MediaSystem.PlaySoundEffect(SFXOptions.Button_Press);
                             holdingEnter = true;
@@ -341,7 +348,7 @@ namespace ApathyEngine.Menus
                             state = MenuState.Normal;
                             MenuHandler.MouseTempDisabled = true;
                         }
-                        else if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuUpKey) ||
+                        else if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuUpKey) ||
                             InputManager.CurrentPad.WasButtonJustPressed(Buttons.LeftThumbstickUp))
                         {
                             if(selectedIndex > 0)
@@ -358,7 +365,7 @@ namespace ApathyEngine.Menus
                             }
                             MenuHandler.MouseTempDisabled = true;
                         }
-                        else if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuDownKey) ||
+                        else if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuDownKey) ||
                             InputManager.CurrentPad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
                         {
                             if(selectedIndex < names.Length - 1)
@@ -375,7 +382,7 @@ namespace ApathyEngine.Menus
                             }
                             MenuHandler.MouseTempDisabled = true;
                         }
-                        else if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuLeftKey) ||
+                        else if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuLeftKey) ||
                             InputManager.CurrentPad.WasButtonJustPressed(Buttons.LeftThumbstickLeft))
                         {
                             if(selectedIndex > 0)
@@ -390,7 +397,7 @@ namespace ApathyEngine.Menus
                             }
                             MenuHandler.MouseTempDisabled = true;
                         }
-                        else if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuRightKey) ||
+                        else if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuRightKey) ||
                             InputManager.CurrentPad.WasButtonJustPressed(Buttons.LeftThumbstickRight))
                         {
                             if(selectedIndex < names.Length - 1)
@@ -533,6 +540,20 @@ namespace ApathyEngine.Menus
 
             if(fade == FadeDirection.None && state == MenuState.Normal && backgroundTint.A == 0) // stop updating the buttons when we're selecting other stuff
                 base.Update(gameTime);
+
+            mouseLastFrame = InputManager.MouseState;
+        }
+
+        /// <summary>
+        /// Checks to see if the mouse was within a certain set of coordinates last frame.
+        /// </summary>
+        /// <param name="upperLeft">Upper left corner of defining rectangle.</param>
+        /// <param name="lowerRight">Lower right corner of defining rectangle.</param>
+        /// <returns>True if the mouse was within the rectangle.</returns>
+        private static bool wasMouseWithinCoordinates(Vector2 upperLeft, Vector2 lowerRight)
+        {
+            return ((mouseLastFrame.X > upperLeft.X && mouseLastFrame.X < lowerRight.X) &&
+                    (mouseLastFrame.Y > upperLeft.Y && mouseLastFrame.Y < lowerRight.Y));
         }
 
         private void onSongChanged(object sender, EventArgs e)

@@ -25,9 +25,11 @@ namespace ApathyEngine.Menus
         /// <summary>
         /// Creates a confirmation menu.
         /// </summary>
+        /// <param name="game">Owning game.</param>
         /// <param name="confirmationStrings">The strings to prompt the user with. Each string will be displayed centered on a new line.</param>
         /// <param name="onYes">The delegate to perform if the user selects yes.</param>
-        public ConfirmationMenu(Action onYes, params string[] confirmationStrings)
+        public ConfirmationMenu(BaseGame game, Action onYes, params string[] confirmationStrings)
+            :base(game)
         {
             if(confirmationStrings.Length == 0)
                 throw new ArgumentException("confirmationStrings must contain at least one string.", "confirmationStrings");

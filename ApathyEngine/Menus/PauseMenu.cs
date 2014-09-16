@@ -26,17 +26,19 @@ namespace ApathyEngine.Menus
         /// <summary>
         /// Creates a pause menu with no restart option.
         /// </summary>
+        /// <param name="game">Owning game.</param>
         /// <param name="resumeSprite">Sprite to use for the resume button.</param>
         /// <param name="mainMenuSprite">Sprite to use for the main menu button.</param>
         /// <param name="quitSprite">Sprite to use for the quit button.</param>
         /// <param name="mainMenuConfirmStrings">These strings will be passed into the constructor of the <pre>ConfirmationMenu</pre> to provide additional information about returning to the main menu.</param>
-        public PauseMenu(Sprite resumeSprite, Sprite mainMenuSprite, Sprite quitSprite, params string[] mainMenuConfirmStrings)
+        public PauseMenu(BaseGame game, Sprite resumeSprite, Sprite mainMenuSprite, Sprite quitSprite, params string[] mainMenuConfirmStrings)
+            :base(game)
         {
             MenuControl resume, mainMenu, quit;
 
-            resume = new MenuButton(resumeSprite, delegate { MediaSystem.PlaySoundEffect(SFXOptions.Pause); GameManager.State = GameState.Running; });
+            resume = new MenuButton(resumeSprite, delegate { MediaSystem.PlaySoundEffect(SFXOptions.Pause); game.ChangeState(GameState.Running); });
             mainMenu = new MenuButton(mainMenuSprite, delegate { menu.Reset(); confirming = true; });
-            quit = new MenuButton(quitSprite, delegate { GameManager.State = GameState.Exiting; });
+            quit = new MenuButton(quitSprite, delegate { game.ChangeState(GameState.Exiting); });
 
             resume.SetDirectionals(null, mainMenu, null, null);
             mainMenu.SetDirectionals(resume, quit, null, null);
@@ -46,20 +48,22 @@ namespace ApathyEngine.Menus
             selectedControl = resume;
             selectedControl.IsSelected = null;
 
-            menu = new ConfirmationMenu(delegate { GameManager.CurrentLevel.RemoveFromGame(GameManager.Space); GameManager.LevelNumber = -1; MediaSystem.PlayTrack(SongOptions.Menu); if(GameManager.LevelEnteredFrom == GameState.Menuing_Lev) GameManager.State = GameState.Menuing_Lev; else GameManager.State = GameState.MainMenu; },
+            menu = new ConfirmationMenu(game, delegate { GameManager.CurrentLevel.RemoveFromGame(GameManager.Space); MediaSystem.PlayTrack(SongOptions.Menu); if(GameManager.LevelEnteredFrom == GameState.LevelSelectMenu) game.ChangeState(GameState.LevelSelectMenu); else game.ChangeState(GameState.MainMenu); },
                 new[] { "Are you sure you want to return to the main menu?" }.Concat(mainMenuConfirmStrings).ToArray());
         }
 
         /// <summary>
         /// Creates a pause menu with a restart option.
         /// </summary>
+        /// <param name="game">Owning game.</param>
         /// <param name="restartSprite">Sprite to use for the restart button.</param>
         /// <param name="resumeSprite">Sprite to use for the resume button.</param>
         /// <param name="mainMenuSprite">Sprite to use for the main menu button.</param>
         /// <param name="quitSprite">Sprite to use for the quit button.</param>
+        /// <param name="mainMenuConfirmationStrings">Confirmation strings that will be passed into the ConfirmationMenu used for the Main Menu button.</param>
         /// <param name="restartConfirmationString">This string will be passed into the ConfirmationMenu used when the restart button is activated.</param>
-        public PauseMenu(Sprite resumeSprite, Sprite restartSprite, Sprite mainMenuSprite, Sprite quitSprite, string restartConfirmationString, params string[] mainMenuConfirmationStrings)
-            : this(resumeSprite, mainMenuSprite, quitSprite, mainMenuConfirmationStrings)
+        public PauseMenu(BaseGame game, Sprite resumeSprite, Sprite restartSprite, Sprite mainMenuSprite, Sprite quitSprite, string restartConfirmationString, params string[] mainMenuConfirmationStrings)
+            : this(game, resumeSprite, mainMenuSprite, quitSprite, mainMenuConfirmationStrings)
         {
             MenuControl restart = new MenuButton(restartSprite, delegate { restartMenu.Reset(); confirmRestart = true; });
 
@@ -69,13 +73,13 @@ namespace ApathyEngine.Menus
 
             controlArray.Insert(1, restart);
 
-            restartMenu = new ConfirmationMenu(delegate { GameManager.CurrentLevel.ResetLevel(); GameManager.State = GameState.Running; MenuHandler.mainMenu.ResetTimer(); },
+            restartMenu = new ConfirmationMenu(game, delegate { GameManager.CurrentLevel.ResetLevel(); game.ChangeState(GameState.Running); MenuHandler.mainMenu.ResetTimer(); },
                 restartConfirmationString);
         }
 
         public override void Draw(GameTime gameTime)
         {
-            GameManager.DrawLevel(gameTime);
+            game.DrawRunning(gameTime);
 
             RenderingDevice.SpriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.LinearClamp, null, null);
 
@@ -124,10 +128,10 @@ namespace ApathyEngine.Menus
                 return;
             }
 
-            if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.PauseKey) ||
-                InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.PauseKey))
+            if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.PauseKey) ||
+                InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.PauseKey))
             {
-                GameManager.State = GameState.Running;
+                game.ChangeState(GameState.Running);
                 MediaSystem.PlaySoundEffect(SFXOptions.Pause);
                 selectedControl.IsSelected = false;
                 controlArray[0].IsSelected = null;

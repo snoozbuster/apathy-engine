@@ -12,11 +12,17 @@ using Microsoft.Xna.Framework.Input;
 using ApathyEngine.Graphics;
 using ApathyEngine.Utilities;
 using ApathyEngine.Input;
+using ApathyEngine.Media;
 
 namespace ApathyEngine.Achievements
 {
     public class AchievementManager
     {
+        /// <summary>
+        /// Fires when an achievement is unlocked.
+        /// </summary>
+        public event Action<Achievement> AchievementUnlocked;
+
         private static bool initialized = false;
 
         protected bool drawAchievementGotten;
@@ -48,11 +54,14 @@ namespace ApathyEngine.Achievements
 
         protected List<Type> achTypes = new List<Type>();
 
-        public AchievementManager()
+        protected BaseGame game;
+
+        public AchievementManager(BaseGame game)
         {
             if(initialized)
                 throw new InvalidOperationException("AchievementManager is a singleton and has already been instantiated.");
 
+            this.game = game;
             timer = new Timer(7000, onEvent, false);
             textColor = Color.Black;
             basePos = new Vector2(604, 620);
@@ -64,16 +73,19 @@ namespace ApathyEngine.Achievements
             achievementTex = Resources.AchievementToastTexture;
             achievementPos = new Vector2(RenderingDevice.Width, RenderingDevice.Height) * relativeScreenSpace;
             text = new HelpfulTextBox(new Rectangle((int)(achievementPos.X + (143 - achievementTex.Width * 0.5f) * RenderingDevice.TextureScaleFactor.X), (int)(achievementPos.Y + (50 - achievementTex.Height * 0.5f) * RenderingDevice.TextureScaleFactor.Y),
-                (int)(332 * RenderingDevice.TextureScaleFactor.X), (int)(50 * RenderingDevice.TextureScaleFactor.Y)), delegate { return Resources.Font; });
+                (int)(332 * RenderingDevice.TextureScaleFactor.X), (int)(50 * RenderingDevice.TextureScaleFactor.Y)), () => Resources.Font);
             text.SetScaling(new Vector2(.8f, .8f));
 
             initialized = true;
         }
 
-        protected void initAchievements()
+        /// <summary>
+        /// After registering achievements, call this to setup the manager.
+        /// </summary>
+        public void Initialize()
         {
-            achievementLists = new List<Achievement>[GameManager.Manager.SaveCount];
-            for(int i = 0; i < GameManager.Manager.SaveCount; i++)
+            achievementLists = new List<Achievement>[game.Manager.SaveCount];
+            for(int i = 0; i < game.Manager.SaveCount; i++)
                 initializeList(i);
         }
 
@@ -111,20 +123,19 @@ namespace ApathyEngine.Achievements
         {
 #if DEBUG
             if(InputManager.KeyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftAlt) && InputManager.KeyboardState.WasKeyJustPressed(Microsoft.Xna.Framework.Input.Keys.Space))
-                foreach(Achievement a in achievementLists[GameManager.Manager.SaveCount])
+                foreach(Achievement a in achievementLists[game.Manager.SaveCount])
                     a.DebugUnlock();
             unlockDebugAchievements();
 #endif
 
-            foreach(Achievement ach in achievementLists[GameManager.Manager.SaveCount])
+            foreach(Achievement ach in achievementLists[game.Manager.CurrentSaveNumber].Where(a => !a.Completed))
             {
-                if(ach.Completed) // no use updating achievements already completed
-                    continue;
-
                 int current, max;
                 bool completed = ach.CheckProgress(gameTime, out current, out max);
                 if(completed)
                 {
+                    if(AchievementUnlocked != null)
+                        AchievementUnlocked(ach);
                     MediaSystem.PlaySoundEffect(SFXOptions.Achievement);
                     achQueue.Enqueue(ach);
                 }
@@ -205,7 +216,7 @@ namespace ApathyEngine.Achievements
         /// </summary>
         /// <param name="ID">The unique ID to get an achievement by.</param>
         /// <returns>The accomplishment attached to that ID, or null if that ID is not in use. Searches the current list.</returns>
-        public Achievement GetAccomplishmentByID(string ID, int saveSlot)
+        public Achievement GetAchievementByID(string ID, int saveSlot)
         {
             foreach(Achievement a in achievementLists[saveSlot-1])
                 if(a.ID == ID)
@@ -226,75 +237,5 @@ namespace ApathyEngine.Achievements
                 (int)(achievementPos.Y + (50 - achievementTex.Height * 0.5f) * RenderingDevice.TextureScaleFactor.Y),
                 (int)(332 * RenderingDevice.TextureScaleFactor.X), (int)(50 * RenderingDevice.TextureScaleFactor.Y)));
         }
-
-        #region debug stuff
-#if DEBUG
-        protected void unlockDebugAchievements()
-        {
-            if(!InputManager.KeyboardState.IsKeyDown(Keys.OemPipe))
-                return;
-
-            Achievement ach = null;
-            
-            if(InputManager.KeyboardState.WasKeyJustPressed(Keys.W))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][0];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.E))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][1];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.R))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][2];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.T))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][3];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.Y))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][4];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.U))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][5];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.I))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][6];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.O))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][7];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.P))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][8];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.A))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][9];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.S))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][10];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.D))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][11];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.F))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][12];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.G))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][13];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.H))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][14];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.J))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][15];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.K))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][16];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.L)) // heavy machinery
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][17];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.Z))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][18];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.X))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][19];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.C))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][20];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.V))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][21];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.B))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][22];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.OemComma))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][23];
-            else if(InputManager.KeyboardState.WasKeyJustPressed(Keys.OemPeriod))
-                ach = achievementLists[GameManager.Manager.CurrentSaveNumber][24];
-
-            if(ach != null)
-            {
-                ach.DebugUnlock();
-                MediaSystem.PlaySoundEffect(SFXOptions.Achievement);
-                achQueue.Enqueue(ach);
-            }
-        }
-#endif
-        #endregion
     }
 }

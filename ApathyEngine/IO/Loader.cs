@@ -11,6 +11,10 @@ using System.Collections.Generic;
 
 namespace ApathyEngine
 {
+    /// <summary>
+    /// Simple single-thread loader using enumeration. Any <pre>GraphicsResource</pre>s loaded by this
+    /// loader should be accessed through a delegate. 
+    /// </summary>
     public abstract class Loader : IEnumerable<float>
     {
         private ContentManager content;
@@ -47,8 +51,18 @@ namespace ApathyEngine
             this.content = content;
         }
 
+        /// <summary>
+        /// Put your things to be loaded here.
+        /// When FullReload() is called, it will iterate through this entire function; be sure that
+        /// this is a safe operation.
+        /// </summary>
+        /// <returns></returns>
         public abstract IEnumerator<float> GetEnumerator();
 
+        /// <summary>
+        /// Call this each time you yield return from GetEnumerator; ie <pre>yield return progress();</pre>.
+        /// </summary>
+        /// <returns>A float between 0 and 1 indicating percentage of progress loaded.</returns>
         protected float progress()
         {
             ++loadedItems;
@@ -58,6 +72,19 @@ namespace ApathyEngine
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        /// <summary>
+        /// Does a full reload of all assets loaded with this Loader. Blocks the calling thread
+        /// until complete. Useful when the graphics device is lost and needs to be reset.
+        /// </summary>
+        public void FullReload()
+        {
+            var enumerator = GetEnumerator();
+            // MoveNext() returns true while there's still items; there's nothing to do but just
+            // iterate the whole thing out. No while body is needed.
+            while(enumerator.MoveNext())
+                ;
         }
     }
 }

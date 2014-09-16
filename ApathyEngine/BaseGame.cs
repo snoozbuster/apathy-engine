@@ -18,12 +18,13 @@ using Microsoft.Win32;
 using ApathyEngine.IO;
 using ApathyEngine.Input;
 using ApathyEngine.Media;
+using ApathyEngine.Menus;
+using ApathyEngine.Achievements;
 
 namespace ApathyEngine
 {
-    public class BaseGame : Game
+    public abstract class BaseGame : Game
     {
-        #region Graphics
         /// <summary>
         /// Gets the primary GraphicsDeviceManager.
         /// </summary>
@@ -37,23 +38,32 @@ namespace ApathyEngine
         /// Defines the preferred screen width for the game.
         /// </summary>
         public virtual static int PreferredScreenWidth { get { return 1280; } }
-        #endregion
 
-        #region I/O
+        /// <summary>
+        /// Gets the game's current state.
+        /// </summary>
+        public GameState State { get; protected set; }
+
+        /// <summary>
+        /// Gets the game's previous state.
+        /// </summary>
+        public GameState PreviousState { get; protected set; }
+
+        /// <summary>
+        /// Fires when the game state is changed. Passes the current BaseGame instance.
+        /// </summary>
+        public event Action<BaseGame> StateChanged;
+
         public SaveManager<T> Manager { get; private set; }
-        #endregion
 
-        #region Loading
-        protected LoadingScreen LoadingScreen { get; private set; }
         public Loader Loader { get; private set; }
         public bool Loading { get; private set; }
 
+        protected LoadingScreen LoadingScreen { get; private set; }
         protected Texture2D backgroundTex;
         protected int alpha = 0;
-
         protected bool readyToLoad = false;
         protected bool beenDrawn = false;
-        #endregion
 
         /// <summary>
         /// Gets a value indicating if the game can current pause while running.
@@ -66,6 +76,7 @@ namespace ApathyEngine
                        InputManager.CurrentPad.WasButtonJustPressed(Manager.CurrentSaveXboxOptions.PauseKey);
             }
         }
+
         /// <summary>
         /// Gets the screen clear color.
         /// </summary>
@@ -137,7 +148,7 @@ namespace ApathyEngine
 
             GameManager.FirstStageInitialization(this);
 
-            AccomplishmentManager.InitAchievements();
+            AchievementManager.Initialize();
 
             try { Manager = new IOManager(); }
             catch { }
@@ -177,10 +188,10 @@ namespace ApathyEngine
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if(stateLastFrame == GameState.Running && GameManager.State == GameState.Paused)
+            if(stateLastFrame == GameState.Running && game.State == GameState.Paused)
                 MediaSystem.PlaySoundEffect(SFXOptions.Pause);
 
-            stateLastFrame = GameManager.State;
+            stateLastFrame = game.State;
 
             if((!IsActive && Loader != null) || locked)
             {
@@ -210,19 +221,19 @@ namespace ApathyEngine
             }
             else
             {
-                if(GameManager.State == GameState.MainMenu && Loading)
+                if(game.State == GameState.MainMenu && Loading)
                     this.IsMouseVisible = false;
                 else
                     this.IsMouseVisible = true;
 
-                GameState statePrior = GameManager.State;
+                GameState statePrior = game.State;
                 MenuHandler.Update(gameTime);
-                bool stateChanged = GameManager.State != statePrior; 
+                bool stateChanged = game.State != statePrior; 
 
-                if(GameManager.State == GameState.Running)
+                if(game.State == GameState.Running)
                 {
                     if(canPause && !stateChanged)
-                        GameManager.State = GameState.Paused;
+                        game.ChangeState(GameState.Paused);
                     else
                         updateRunning(gameTime);
                 }
@@ -252,8 +263,8 @@ namespace ApathyEngine
 
             GraphicsDevice.Clear(backgroundColor);
 
-            if(GameManager.State == GameState.Running)
-                drawRunning(gameTime);
+            if(game.State == GameState.Running)
+                DrawRunning(gameTime);
 
             MenuHandler.Draw(gameTime);
             AccomplishmentManager.Draw();
@@ -279,10 +290,23 @@ namespace ApathyEngine
         }
 
         /// <summary>
+        /// Changes the state and raises the StateChanged event. Sets PreviousState accordingly.
+        /// </summary>
+        /// <param name="newState">New state to be changed to.</param>
+        public virtual void ChangeState(GameState newState)
+        {
+            PreviousState = State;
+            State = newState;
+
+            if(StateChanged != null)
+                StateChanged(this);
+        }
+
+        /// <summary>
         /// Called during Draw() when the game is running and needs to be drawn.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
-        protected virtual void drawRunning(GameTime gameTime)
+        public virtual void DrawRunning(GameTime gameTime)
         {
             GameManager.DrawLevel();
         }
@@ -298,7 +322,7 @@ namespace ApathyEngine
             Loading = false;
             MenuHandler.Create(Loader);
             GameManager.Initialize(Loader.Font, Manager);
-            AccomplishmentManager.Ready();
+            AchievementManager.Ready();
         }
 
         #region Miscellaneous
@@ -314,10 +338,7 @@ namespace ApathyEngine
 
         protected void onGDMCreation(object sender, EventArgs e)
         {
-            Loader.ReloadALLtheThings();
-            Goal.GDMReset();
-            Theme.OnGDMReset();
-            Level.OnGDMReset();
+            Loader.FullReload();
             RenderingDevice.OnGDMCreation(Content.Load<Effect>("Shaders/shadowmap"));
         }
 
@@ -330,30 +351,14 @@ namespace ApathyEngine
             // Ignore errors, it's too late to do anything about them.
             catch { }
 
-#if INDIECITY
-            //Make call to end the session.
-            Session.EndSession();
-
-            do
-            {
-                Session.UpdateSession();
-                System.Threading.Thread.Sleep(100);
-            } while(Session.IsSessionStarted());
-#endif
-
             base.OnExiting(sender, args);
         }
 
         protected override void OnActivated(object sender, EventArgs args)
         {
-#if INDIECITY
-            if(error)
-                return;
-#endif
-
-            if(GameManager.PreviousState == GameState.Running && Manager.CurrentSaveWindowsOptions.ResumeOnFocus)
-                GameManager.State = GameState.Running;
-            if(GameManager.State == GameState.Running)
+            if(PreviousState == GameState.Running && Manager.CurrentSaveWindowsOptions.ResumeOnFocus)
+                ChangeState(GameState.Running);
+            if(State == GameState.Running)
                 MediaSystem.PlayAll();
             else
                 MediaSystem.ResumeBGM();
@@ -362,18 +367,20 @@ namespace ApathyEngine
 
         protected override void OnDeactivated(object sender, EventArgs args)
         {
-            if(GameManager.State == GameState.Running)
-                if(GameManager.CurrentLevel == null)
-                    GameManager.State = GameState.Paused;
-                else if(!GameManager.CurrentLevel.ShowingOverlay)
-                    GameManager.State = GameState.Paused;
+            if(State == GameState.Running)
+                ChangeState(GameState.Paused);
 
             MediaSystem.PauseAll();
             base.OnDeactivated(sender, args);
         }
 
 #if WINDOWS
-        protected void SystemEvents_SessionSwitch(object sender, Microsoft.Win32.SessionSwitchEventArgs e)
+        /// <summary>
+        /// Called when the system is locked or unlocked and performs appropriate tasks.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SystemEvents_SessionSwitch(object sender, Microsoft.Win32.SessionSwitchEventArgs e)
         {
             if(e.Reason == SessionSwitchReason.SessionLock)
             {

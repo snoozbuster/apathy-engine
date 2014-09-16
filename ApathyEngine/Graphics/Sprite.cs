@@ -73,7 +73,7 @@ namespace ApathyEngine.Graphics
         /// The X value of the vector will be used as the width, the Y value as the height.</param>
         public Sprite(Vector2 upLeft, Vector2 heightWidth)
         {
-            textureDelegate = delegate { return null; };
+            textureDelegate = () => null;
             Point = RenderPoint.UpLeft;
             upperLeft = upLeft;
             lowerRight = new Vector2(upLeft.X + heightWidth.X, upLeft.Y + heightWidth.Y);

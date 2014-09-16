@@ -8,7 +8,7 @@ namespace ApathyEngine.Utilities
     /// <summary>
     /// A class that uses delegates to simulate a C-style pointer.
     /// </summary>
-    /// <typeparam name="T">The type f the thing pointed to.</typeparam>
+    /// <typeparam name="T">The type of the thing pointed to.</typeparam>
     public sealed class Pointer<T>
     {
         private Func<T> getter;

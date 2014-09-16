@@ -20,11 +20,16 @@ namespace ApathyEngine.Menus
         private Vector2 exitStringCenter;
         private readonly SpriteFont font;
 
-        public ExitMenu()
+        /// <summary>
+        /// Creates a menu that can be used to ask if the player wants to exit the game.
+        /// </summary>
+        /// <param name="game">Owning game.</param>
+        public ExitMenu(BaseGame game)
+            : base(game)
         {
             MenuButton yes, no;
             yes = new MenuButton(loader.yesButton, delegate { Program.Game.Exit(); });
-            no = new MenuButton(loader.noButton, delegate { GameManager.State = GameManager.PreviousState; });
+            no = new MenuButton(loader.noButton, delegate { game.ChangeState(game.PreviousState); });
             yes.SetDirectionals(null, no, null, null);
             no.SetDirectionals(yes, null, null, null);
             selectedControl = yes;

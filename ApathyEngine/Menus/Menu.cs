@@ -1,6 +1,7 @@
 ﻿using ApathyEngine.Input;
 using ApathyEngine.Menus.Controls;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,29 +12,51 @@ namespace ApathyEngine.Menus
     public abstract class Menu
     {
         /// <summary>
+        /// Fires when either the mouse enters a control or the control is given focus by the keyboard.
+        /// </summary>
+        public event Action<MenuControl> ControlEntered;
+        /// <summary>
+        /// Fires when a control is clicked on or the selection key is pressed but not released.
+        /// </summary>
+        public event Action<MenuControl> ControlClicked;
+        /// <summary>
+        /// Fires after a control is clicked on, when the mouse or selection button is released.
+        /// </summary>
+        public event Action<MenuControl> ControlReleased;
+
+        /// <summary>
         /// A dictionary of all the controls. The key is the control, and the value is false if not selected, null if selected but
         /// no buttons are down, and true if there's a button down and it's selected.
         /// </summary>
         protected List<MenuControl> controlArray;
 
         /// <summary>
-        /// The currently selected control.
+        /// Gets the currently selected control.
         /// </summary>
         protected MenuControl selectedControl;
 
         protected bool enterLetGo = false;
         protected bool holdingSelection = false;
 
-        private bool playedClickSound = false;
+        /// <summary>
+        /// Gets the owning BaseGame.
+        /// </summary>
+        protected BaseGame game;
+
+        private bool firedMouseClickEvent = false;
 
         /// <summary>
-        /// You NEED to set selectedControl in your constructor. Absolutely need. Just set it to
-        /// controlArray.ElementAt(0).Key. That's all you have to remember to do. If you don't,
-        /// things WILL crash. Boom. Also, set controlArray.IsSelected to null.
+        /// You NEED to set selectedControl in your constructor, as well as set selectedControl.IsSelected to null.
         /// </summary>
-        protected Menu()
+        /// <param name="game">Owning game.</param>
+        protected Menu(BaseGame game)
         {
+            this.game = game;
             controlArray = new List<MenuControl>();
+
+            ControlEntered += (c) => MediaSystem.PlaySoundEffect(SFXOptions.Button_Rollover);
+            ControlClicked += (c) => MediaSystem.PlaySoundEffect(SFXOptions.Button_Press);
+            ControlReleased += (c) => MediaSystem.PlaySoundEffect(SFXOptions.Button_Release);
         }
 
         /// <summary>
@@ -61,8 +84,8 @@ namespace ApathyEngine.Menus
         /// <returns></returns>
         protected virtual bool detectKeyboardInput()
         {
-            if((InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuLeftKey) ||
-                InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.MenuLeftKey)) && selectedControl.OnLeft != null)
+            if((InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuLeftKey) ||
+                InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.MenuLeftKey)) && selectedControl.OnLeft != null)
             {
                 MenuHandler.MouseTempDisabled = true;
                 selectedControl.IsSelected = false;
@@ -77,16 +100,16 @@ namespace ApathyEngine.Menus
                         break;
                     }
                 } while(selectedControl.IsDisabled);
-                //} while(loader.levelArray[controlArray.IndexOf(selectedControl)] == null);
 
                 if(initial != selectedControl)
-                    MediaSystem.PlaySoundEffect(SFXOptions.Button_Rollover);
+                    if(ControlEntered != null)
+                        ControlEntered(selectedControl);
 
                 selectedControl.IsSelected = null;
                 return false;
             }
-            else if((InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuRightKey) ||
-                     InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.MenuRightKey)) && selectedControl.OnRight != null)
+            else if((InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuRightKey) ||
+                     InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.MenuRightKey)) && selectedControl.OnRight != null)
             {
                 MenuHandler.MouseTempDisabled = true;
                 selectedControl.IsSelected = false;
@@ -102,16 +125,16 @@ namespace ApathyEngine.Menus
                         break;
                     }
                 } while(selectedControl.IsDisabled);
-                //} while(loader.levelArray[controlArray.IndexOf(selectedControl)] == null);
 
                 if(initial != selectedControl)
-                    MediaSystem.PlaySoundEffect(SFXOptions.Button_Rollover);
+                    if(ControlEntered != null)
+                        ControlEntered(selectedControl);
 
                 selectedControl.IsSelected = null;
                 return false;
             }
-            else if((InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuUpKey) ||
-                     InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.MenuUpKey)) && selectedControl.OnUp != null)
+            else if((InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuUpKey) ||
+                     InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.MenuUpKey)) && selectedControl.OnUp != null)
             {
                 MenuHandler.MouseTempDisabled = true;
                 selectedControl.IsSelected = false;
@@ -144,16 +167,16 @@ namespace ApathyEngine.Menus
                         } while(selectedControl.IsDisabled);
                     }
                 } while(selectedControl.IsDisabled);
-                //} while(loader.levelArray[controlArray.IndexOf(selectedControl)] == null);
 
                 if(initial != selectedControl)
-                    MediaSystem.PlaySoundEffect(SFXOptions.Button_Rollover);
+                    if(ControlEntered != null)
+                        ControlEntered(selectedControl);
 
                 selectedControl.IsSelected = null;
                 return false;
             }
-            else if((InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.MenuDownKey) ||
-                     InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.MenuDownKey)) && selectedControl.OnDown != null)
+            else if((InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.MenuDownKey) ||
+                     InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.MenuDownKey)) && selectedControl.OnDown != null)
             {
                 MenuHandler.MouseTempDisabled = true;
                 selectedControl.IsSelected = false;
@@ -185,10 +208,10 @@ namespace ApathyEngine.Menus
                         } while(selectedControl.IsDisabled);
                     }
                 } while(selectedControl.IsDisabled);
-                //} while(loader.levelArray[controlArray.IndexOf(selectedControl)] == null);
 
                 if(initial != selectedControl)
-                    MediaSystem.PlaySoundEffect(SFXOptions.Button_Rollover);
+                    if(ControlEntered != null)
+                        ControlEntered(selectedControl);
 
                 selectedControl.IsSelected = null;
                 return false;
@@ -196,33 +219,34 @@ namespace ApathyEngine.Menus
 
             bool? old = selectedControl.IsSelected;
 
-            if(InputManager.KeyboardState.WasKeyJustPressed(Program.Game.Manager.CurrentSaveWindowsOptions.SelectionKey) ||
-                InputManager.CurrentPad.WasButtonJustPressed(Program.Game.Manager.CurrentSaveXboxOptions.SelectionKey))
+            if(InputManager.KeyboardState.WasKeyJustPressed(game.Manager.CurrentSaveWindowsOptions.SelectionKey) ||
+                InputManager.CurrentPad.WasButtonJustPressed(game.Manager.CurrentSaveXboxOptions.SelectionKey))
             {
                 holdingSelection = true;
                 MenuHandler.MouseTempDisabled = true;
             }
-            else if(InputManager.KeyboardState.IsKeyUp(Program.Game.Manager.CurrentSaveWindowsOptions.SelectionKey) &&
-                InputManager.CurrentPad.IsButtonUp(Program.Game.Manager.CurrentSaveXboxOptions.SelectionKey) && holdingSelection)
+            else if(InputManager.KeyboardState.IsKeyUp(game.Manager.CurrentSaveWindowsOptions.SelectionKey) &&
+                InputManager.CurrentPad.IsButtonUp(game.Manager.CurrentSaveXboxOptions.SelectionKey) && holdingSelection)
                 holdingSelection = false;
 
             bool buttonDown = holdingSelection && !selectedControl.IsDisabled;
-            //loader.levelArray[controlArray.IndexOf(selectedControl)] != null;
             if(buttonDown)
                 MenuHandler.MouseTempDisabled = true;
 
             if(!old.HasValue && buttonDown && MenuHandler.MouseTempDisabled)
             {
-                if(!(selectedControl is DropUpMenuControl))
-                    MediaSystem.PlaySoundEffect(SFXOptions.Button_Press);
                 selectedControl.IsSelected = true;
+                if(!(selectedControl is DropUpMenuControl))
+                    if(ControlClicked != null)
+                        ControlClicked(selectedControl);
                 return false;
             }
             else if(old.HasValue && old.Value && !buttonDown && MenuHandler.MouseTempDisabled)
             {
-                MediaSystem.PlaySoundEffect(SFXOptions.Button_Release);
                 selectedControl.IsSelected = null;
                 holdingSelection = false;
+                if(ControlReleased != null)
+                    ControlReleased(selectedControl);
                 return true;
             }
 
@@ -239,7 +263,7 @@ namespace ApathyEngine.Menus
             if(!MenuHandler.MouseTempDisabled)
             {
                 if(InputManager.MouseState.LeftButton == ButtonState.Released)
-                    playedClickSound = false;
+                    firedMouseClickEvent = false;
 
                 foreach(MenuControl m in controlArray)
                 {
@@ -248,22 +272,27 @@ namespace ApathyEngine.Menus
 
                     if(old.HasValue && !old.Value && !current.HasValue)
                     {
-                        MediaSystem.PlaySoundEffect(SFXOptions.Button_Rollover);
                         selectedControl = m;
+                        if(ControlEntered != null)
+                            ControlEntered(selectedControl);
                         return false;
                     }
                     else if(!old.HasValue && current.HasValue && current.Value)
                     {
-                        if(!playedClickSound)
-                            MediaSystem.PlaySoundEffect(SFXOptions.Button_Press);
-                        playedClickSound = true;
                         selectedControl = m;
+                        if(!firedMouseClickEvent)
+                        {
+                            if(ControlClicked != null)
+                                ControlClicked(selectedControl);
+                            firedMouseClickEvent = true;
+                        }
                         return false;
                     }
                     else if(old.HasValue && old.Value && !current.HasValue && InputManager.MouseState.LeftButton == ButtonState.Released)
                     {
-                        MediaSystem.PlaySoundEffect(SFXOptions.Button_Release);
                         selectedControl = m;
+                        if(ControlReleased != null)
+                            ControlReleased(selectedControl);
                         return true;
                     }
                 }
